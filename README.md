@@ -25,7 +25,7 @@ You link it into your own workflow or appliances as an upstream layer and call i
 | You are legally required to anonymise IP addresses before storing logs. | AVX‑512 accelerated masking works on both IPv4 and IPv6, with configurable levels. |
 | You need an audit‑proof, corruption‑resiliant binary archive for compliance. | PULP batches are self‑contained and can be decoded years later with the supplied command‑line tool. |
 | You already have a log collector (Fluent Bit, Vector, etc.) and just want a faster writer. | PULP outputs compressed `.bin` files that any collector can ship; you decide when and how to move them. |
-| You don't want to manage a separate logging service or daemon. | PULP is a single DLL, linked statically or dynamically into your own process. No extra process, no network ports, no heavy configurat[...] |
+| You don't want to manage a separate logging service or daemon. | PULP is a single DLL, linked statically or dynamically into your own process. No extra process, no network ports, no heavy configuration |
 
 ---
 

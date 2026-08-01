@@ -130,7 +130,7 @@ int main() {
     // Write a log/evt entry from any thread
     uint16_t res = PulpWrite(
         12,                                          // Numeric identifier of the operation (HTTP method, ICMP type, DNS opcode, etc.), user defined
-        "[https://www.resource/admin/overview.jpeg](https://www.resource/admin/overview.jpeg)",  // Generic resource reference (URL, domain name, ICMP message, etc.) 563 char MAX, see API header for truncation politic.
+        "https://www.resource/admin/overview.jpeg",  // Generic resource reference (URL, domain name, ICMP message, etc.) 563 char MAX, see API header for truncation politic.
         40,                                          // Length of the resource string without the terminating char.
         200,                                         // Generic response or error code (HTTP status, DNS RCODE, ICMP code/type, etc.)
         "172.21.22.23",                              // Target address (IPv4/IPv6, hostname, DNS server, etc.). Do NOT try IP_ANON on non-IP endpoints.

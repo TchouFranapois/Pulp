@@ -130,7 +130,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>$(SolutionDir)\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Xxh3.lib;Lz4.lib;Cityhash_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -183,6 +183,17 @@
     <ClInclude Include="pulp.h" />
     <ClInclude Include="pulp_internal.h" />
     <ClInclude Include="stats.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Cityhash_wrapper\Cityhash_wrapper.vcxproj">
+      <Project>{ffa0dcc5-f84c-4600-8dce-e1e9b8567ec2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Lz4\Lz4.vcxproj">
+      <Project>{f6d6ba12-5661-4bcc-9b87-a406c7303b0e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Xxh3\Xxh3.vcxproj">
+      <Project>{e0548697-9ca1-4c0b-a8cc-a538d6bbd283}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -109,7 +109,7 @@ The DLL is intended to be called by a pool of (or one unique) long lived thread.
 
 int main() {
     // One‑time initialisation
-    uint8_t rc = Pulp_Init(
+    uint8_t rc = PulpInit(
         "C:\\Logs",                // primary log folder
         "D:\\BackupLogs",          // backup folder (optional, can be "")
         "C:\\Errors",              // error log folder
@@ -145,7 +145,7 @@ int main() {
     uint8_t error        = res >> 8;
 
     // Graceful shutdown
-    Pulp_Shutdown();
+    PulpShutdown();
     return 0;
 }
 ```
@@ -233,7 +233,7 @@ Hereafter are some implementations ideas, which would require adding only basic 
 
 ### 1. Optimally compressed local archiving for high traffic appliances
 
-Just link PULP, call `Pulp_Write()`, and the compressed shards accumulate in your log folder. Use `PulpReader` later to decode them.
+Just link PULP, call `PulpWrite()`, and the compressed shards accumulate in your log folder. Use `PulpReader` later to decode them.
 
 ### 2. Centralised logging with a network share
 
@@ -289,7 +289,7 @@ factor. You can measure savings on your own workloads using the included
 ```
 Pulp_Write()  →  TLS context  →  URL/IP cache  →  active buffer
                     ↑                                ↓ (buffer full)
-                    |                             Pulp_Flush()
+                    |                             PulpFlush()
                     |                                ↓
                     |                             BuildDictionaryInMemory()
                     |                                ↓
@@ -318,7 +318,7 @@ Every block is independently decompressible. A partially written file can be rea
 
 ## Live Telemetry
 
-`Pulp_GetStats()` returns a JSON snapshot (caller must free with `Pulp_FreeStats()`):
+`PulpGetStats()` returns a JSON snapshot (caller must free with `PulpFreeStats()`):
 
 ```json
 {
@@ -336,7 +336,7 @@ Every block is independently decompressible. A partially written file can be rea
 }
 ```
 
-> `Pulp_GetStats()` introduces a ~2 s measurement window. Call it at most every few seconds with a dedicated thread.
+> `PulpGetStats()` introduces a ~2 s measurement window. Call it at most every few seconds with a dedicated thread.
 
 ---
 
@@ -345,7 +345,7 @@ Every block is independently decompressible. A partially written file can be rea
 - **Windows x64 only.** The code uses AVX2/AVX‑512 intrinsics and Windows‑specific APIs (TLS, SRW locks, thread pools). A Linux port is planned.
 - **No transactional durability for in‑flight data.** Logs in the active buffer are lost on a hard crash. Loss is bounded to `BATCH_SIZE / 32` entries per thread + the write queue if any (it's usually empty due to the speed of the write pool). Batches already flushed to disk are safe.
 - **Flush triggered by throughput only** – no background timer. Low‑traffic applications should use the smallest batch size (15 600 logs) probably with a unique long lived thread.
-- **Fixed log schema.** The `Pulp_Write()` signature is optimised for HTTP structured logs. Arbitrary structured fields might require extending the source, although the current field semantic is fairly agnostic.
+- **Fixed log schema.** The `PulpWrite()` signature is optimised for HTTP structured logs. Arbitrary structured fields might require extending the source, although the current field semantic is fairly agnostic.
 
 ---
 

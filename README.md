@@ -345,7 +345,8 @@ Every block is independently decompressible. A partially written file can be rea
 - **Windows x64 only.** The code uses AVX2/AVX‑512 intrinsics and Windows‑specific APIs (TLS, SRW locks, thread pools). A Linux port is planned.
 - **No transactional durability for in‑flight data.** Logs in the active buffer are lost on a hard crash. Loss is bounded to `BATCH_SIZE / 32` entries per thread + the write queue if any (it's usually empty due to the speed of the write pool). Batches already flushed to disk are safe.
 - **Flush triggered by throughput only** – no background timer. Low‑traffic applications should use the smallest batch size (15 600 logs) probably with a unique long lived thread.
-- **Fixed log schema.** The `PulpWrite()` signature is optimised for HTTP structured logs. Arbitrary structured fields might require extending the source, although the current field semantic is fairly agnostic.
+- **Fixed log schema.** The PulpWrite() signature accepts a fixed set of fields (operation, resource, endpoint, status, timing, flags). 
+  These cover HTTP, DNS, ICMP and similar tabular log formats. Fully arbitrary structured fields would require extending the source.
 
 ---
 

@@ -5,12 +5,12 @@ VisualStudioVersion = 17.14.36310.24
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cityhash_wrapper", "Cityhash_wrapper\Cityhash_wrapper.vcxproj", "{FFA0DCC5-F84C-4600-8DCE-E1E9B8567EC2}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Pulp", "Fastlogs_v.0.6\Pulp.vcxproj", "{D66EC3A7-0995-4789-94C7-D17CC91EA3A3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Pulp", "Pulp\Pulp.vcxproj", "{D66EC3A7-0995-4789-94C7-D17CC91EA3A3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FFA0DCC5-F84C-4600-8DCE-E1E9B8567EC2} = {FFA0DCC5-F84C-4600-8DCE-E1E9B8567EC2}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PulpReader", "LogReader_v.0.6\PulpReader.vcxproj", "{45BF716B-D765-4349-9ADA-3F06AD5F3911}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PulpReader", "PulpReader\PulpReader.vcxproj", "{45BF716B-D765-4349-9ADA-3F06AD5F3911}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{9C8CB701-102D-CF49-A3E0-89AC09D42C2C}"
 	ProjectSection(SolutionItems) = preProject

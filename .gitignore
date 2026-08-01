@@ -1,0 +1,36 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.sdf
+*.opensdf
+
+# Build outputs
+Debug/
+Release/
+x64/
+
+# Compiled / intermediate files
+*.obj
+*.iobj
+*.ipdb
+*.pdb
+*.ilk
+*.log
+*.tlog
+*.pch
+*.pgd
+*.iobj
+*.ipdb
+
+# Binaries (we don't commit DLLs, EXEs, static libs)
+*.dll
+*.exe
+*.lib
+*.exp
+
+# IDE JetBrains (Rider, IntelliJ, etc.)
+.idea/
+
+# GitHub Copilot instructions (fichier généré automatiquement)
+.github/copilot-instructions.md

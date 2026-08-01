@@ -1,0 +1,44 @@
+LicenseRef-Superwired-Commercial.txt – PULP Commercial License
+
+Copyright (C) 2026  Francois Gauthier – Superwired-Labs
+
+1. GRANT OF LICENSE
+   Subject to payment of the agreed license fees, Superwired-Labs grants the
+   Licensee a non exclusive, non transferable, worldwide license to use the
+   software known as PULP (Precompressed Upstream Layer Pipeline) and to
+   integrate it into the Licensee's products and services, in binary form only.
+
+2. RESTRICTIONS
+   The Licensee shall not:
+   a) Sell, assign, sublicense, lease, or otherwise transfer the Software to
+      any subsidiary, affiliate, or third party.
+   b) Distribute the Software or its binaries in a standalone form that allows
+      third parties to use it independently.
+   c) Remove or alter any proprietary notices from the Software.
+
+3. INTELLECTUAL PROPERTY
+   All rights, title, and interest in and to the Software, including all
+   intellectual property rights, remain the exclusive property of
+   Superwired-Labs. This license does not convey any ownership rights.
+
+4. TERM AND TERMINATION
+   This license is granted for the period specified in the order. It will
+   terminate automatically upon expiry or upon breach of its terms. Upon
+   termination, the Licensee must cease all use of the Software and destroy
+   all copies.
+
+5. WARRANTY DISCLAIMER AND LIMITATION OF LIABILITY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+   SUPERWIRED-LABS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+   OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+6. GOVERNING LAW
+   This license shall be governed by and construed in accordance with the laws
+   of France.
+
+For pricing and ordering information, contact
+fgauthier [at] superwired-labs [dot] com

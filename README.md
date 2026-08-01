@@ -1,18 +1,18 @@
 # PULP – Precompressed Upstream Layer Pipeline
-copyright François Gauthier - Superwired‑Labs
+Copyright François Gauthier - Superwired-Labs
 
 [![License](https://img.shields.io/badge/License-AGPL%20v3%20%2F%20Commercial-blue.svg)](LICENSES/AGPL-3.0.txt)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-lightgrey)]()
 
-**PULP is a lightweight (50 KB) Windows native C library (DLL) that compresses, anonymises, and writes logs directly to disk at line-rate.**
+**PULP is a lightweight (< 50 KB) C library (DLL) that compresses, anonymises, and writes logs directly to disk at line-rate.**
 
-You link it into your own workflow or appliances as an upstream layer and call its functions from your code. A companion command‑line utility (`PulpReader`) is provided to decode the binary archives[...]
+You link it into your own application and call its functions from your code. 
+A companion command‑line utility (`PulpReader`) is provided to decode the binary archives back to text or JSON.
 
 **Key numbers (6‑core Ryzen 5 Pro 8640HS, NVMe SSD):**
-
 - **+21 million logs/second** sustained throughput
-- **~3–6:1 compression** on typical HTTP logs (semantic + LZ4)
-- **As low as 20 MB memory** footprint, fully deterministic
+- **~3-6:1 compression** on typical HTTP logs (semantic + LZ4)
+- **As low as 20 MB memory** footprint, fully deterministic 
 
 ---
 
@@ -20,21 +20,22 @@ You link it into your own workflow or appliances as an upstream layer and call i
 
 | Your situation | What PULP brings |
 |----------------|-------------------|
-| You build a high‑traffic web server, proxy, or firewall on Windows and need to log millions of requests per second. | PULP compresses on the fly and writes directly to disk, keeping CPU and memory[...] |
+| You build a high‑traffic web server, proxy, or firewall on Windows and need to log millions of requests per second. | PULP compresses on the fly and writes directly to disk, keeping CPU and memory usage predictable. |
 | You want to reduce the cost of log storage and network egress. | Lossless semantic pre‑compression plus LZ4 typically shrinks HTTP logs by a factor of 5. |
 | You are legally required to anonymise IP addresses before storing logs. | AVX‑512 accelerated masking works on both IPv4 and IPv6, with configurable levels. |
 | You need an audit‑proof, corruption‑resiliant binary archive for compliance. | PULP batches are self‑contained and can be decoded years later with the supplied command‑line tool. |
 | You already have a log collector (Fluent Bit, Vector, etc.) and just want a faster writer. | PULP outputs compressed `.bin` files that any collector can ship; you decide when and how to move them. |
-| You don't want to manage a separate logging service or daemon. | PULP is a single DLL, linked statically or dynamically into your own process. No extra process, no network ports, no heavy configuration |
+| You don't want to manage a separate logging service or daemon. | PULP is a single DLL, linked statically or dynamically into your own process. No extra process, no network ports, no heavy configuration. |
 
 ---
 
 ## Why Windows?
 
-Most ultra-high-performance telemetry tools (Vector, eBPF-based agents, Fluent Bit) are designed Linux-first. On Windows Server—which powers critical IIS infrastructure, high-throughput enterprise [...]
+Most ultra-high-performance telemetry tools (Vector, eBPF-based agents, Fluent Bit) are designed Linux-first. 
+On Windows Server, which powers critical IIS infrastructure, high-throughput enterprise .NET apps, and low-latency C++ services, developers are often left with two undesirable options:
 
-1. Heavy managed logging frameworks that cause Garbage Collection (GC) pauses and high CPU overhead under heavy traffic spikes.
-2. Cross-platform ports that wrap Linux paradigms, losing performance through abstraction layers.
+1. **Heavy managed logging frameworks** that cause Garbage Collection (GC) pauses and high CPU overhead under heavy traffic spikes.
+2. **Cross-platform ports** that wrap Linux paradigms, losing performance through abstraction layers.
 
 **PULP was built to solve this exact problem.**
 
@@ -43,7 +44,7 @@ Rather than using generic cross-platform wrappers, PULP leverages bare-metal Win
 - Native **Windows Thread Pool API** for asynchronous compression tasks.
 - Hardware-accelerated **AVX2 / SIMD intrinsics** tuned for x64 architecture.
 
-By committing fully to the Win32 ecosystem, PULP delivers line-rate ingestion with zero GC impact and a deterministic memory footprint.
+By committing fully to the Win32 ecosystem, PULP delivers line-rate ingestion with zero GC impact and a deterministic memory footprint under.
 
 ---
 
@@ -68,8 +69,7 @@ Measured on a Lenovo ThinkPad P14s Gen 5 (Ryzen 5 Pro 8640HS, 96 GB RAM, NVMe SS
 
 Workload: 1 000 unique URLs × 5 000 unique IPs, random distribution.
 
-High-Performance Mode (6 caller threads):
-
+**High-Performance Mode (6 caller threads):**
 - 250,000,000 logs in 11.52 seconds
 - 21.71M logs/second sustained
 - ~105MB RAM footprint
@@ -77,8 +77,7 @@ High-Performance Mode (6 caller threads):
 - End-to-end ratio: ~5.16× (preprocessing + LZ4: 19.4% of the original)
 - 0 logs lost, 0 backpressure events
 
-Economy Mode (single caller thread):
-
+**Economy Mode (single caller thread):**
 - 250,000,000 logs in 29.52 seconds
 - 8.47M logs/second
 - ~16MB RAM footprint
@@ -93,7 +92,7 @@ Performance depends on the hardware, the number of threads, the data entropy, ca
 ## Requirements
 
 - Windows 10 / 11 or Windows Server 2016+ (x64).
-- CPU with **AVX2** support (all modern x86‑64 processors).
+- CPU with **AVX2** support (all modern x86‑64 processors).  
   **AVX‑512 (F, BW, VL) is only required if IP anonymisation is enabled.**
 - Visual Studio 2022 (solution provided).
 
@@ -108,19 +107,19 @@ The DLL is intended to be called by a pool of (or one unique) long lived thread.
 ```c
 #include "pulp.h"
 
-int main(void) {
+int main() {
     // One‑time initialisation
     uint8_t rc = Pulp_Init(
-        "C:\\Logs",            // primary log folder
-        "D:\\BackupLogs",      // backup folder (optional, can be "")
-        "C:\\Errors",          // error log folder
-        1,                     // enable/disable atomic inter‑thread sequence IDs
-        ANON_IP_2,             // anonymization level
-        1,                     // enable/disable strip URL query parameters (if URLs are to be logged)
-        128,                   // file rotation every 128 batches (must be power of 2)
-        COMPRESSION_BALANCED,  // LZ4 compression level
-        BATCH_8MB,             // 8MB active buffer or 262,144 in-flight logs
-        DICT_256K              // 256k slots cache
+        "C:\\Logs",                // primary log folder
+        "D:\\BackupLogs",          // backup folder (optional, can be "")
+        "C:\\Errors",              // error log folder
+        1,                         // enable/disable atomic inter‑thread sequence IDs
+        ANON_IP_2,                 // enable/disable anonymization on last 4 octets (IPv4) / 4 hextets (IPv6)
+        1,                         // enable/disable strip URL query parameters (if URLs are to be logged)
+        128,                       // file rotation every 128 batches (must be power of 2)
+        COMPRESSION_BALANCED,      // LZ4 compression level
+        BATCH_8MB,                 // 8MB active buffer or 262 144 in-flight logs
+        DICT_256K                  // 256k slots cache
     );
 
     if (rc != RTN_OK) {
@@ -129,19 +128,19 @@ int main(void) {
     }
 
     // Write a log/evt entry from any thread
-    uint16_t res = Pulp_Write(
-        12,                                    // Numeric identifier of the operation
-        "https://www.resource/admin/overview.jpeg", // Resource reference (URL), max length handled by API
-        40,                                    // Length of the resource string (without terminating char)
-        200,                                   // Response or error code
-        "172.21.22.23",                        // Target address (IPv4/IPv6, hostname, etc.)
-        12,                                    // Length of the endpoint string
-        4520,                                  // Duration in milliseconds (0–65535)
-        8,                                     // Data size bucket (user defined)
-        123,                                   // Free bitmask (user defined)
-        1780008801123456ULL                     // High-resolution timestamp in microseconds (UTC)
+    uint16_t res = PulpWrite(
+        12,                                          // Numeric identifier of the operation (HTTP method, ICMP type, DNS opcode, etc.), user defined
+        "[https://www.resource/admin/overview.jpeg](https://www.resource/admin/overview.jpeg)",  // Generic resource reference (URL, domain name, ICMP message, etc.) 563 char MAX, see API header for truncation politic.
+        40,                                          // Length of the resource string without the terminating char.
+        200,                                         // Generic response or error code (HTTP status, DNS RCODE, ICMP code/type, etc.)
+        "172.21.22.23",                              // Target address (IPv4/IPv6, hostname, DNS server, etc.). Do NOT try IP_ANON on non-IP endpoints.
+        12,                                          // Length of the endpoint string
+        4520,                                        // Duration in milliseconds (0–65535)
+        8,                                           // Data size bucket (0 = 1–5 KB, 1 = 5–10 KB, etc.), user defined
+        123,                                         // Free bitmask (bit 0 = encrypted, bit 1 = protocol version, bit 2 = fragmented, etc.), user defined
+        1780008801123456                             // High-resolution timestamp in microseconds (UTC ISO-8601) ("2026-07-29T14:53:21.123456Z" as per the example)
     );
-
+    
     uint8_t backpressure = res & 0xFF;
     uint8_t error        = res >> 8;
 
@@ -149,8 +148,9 @@ int main(void) {
     Pulp_Shutdown();
     return 0;
 }
-
 ```
+
+---
 
 ## API Overview
 
@@ -188,7 +188,7 @@ Number of unique URL/IP values the per‑thread cache can hold.
 
 ### Batch size (`BatchSize`)
 
-Controls the flush threshold and the maximum in-flight logs (lost on a hard crash, power outage, etc.). The write queue can also hold batches waiting to be processed.
+Controls the flush threshold and the maximum in-flight logs (lost on a hard crash, power outage, etc. The write queue can also hold batches waiting to be processed).
 
 | Value | Max loss/thread |
 |-------|-----------------|
@@ -203,7 +203,7 @@ Flush is triggered by buffer pressure only (no timer). Call `Pulp_Shutdown()` to
 
 ### Compression level (`Lz4CompressionLevel`)
 
-Since compression isn't the bottleneck, COMPRESSION_BALANCED is generally recommanded.
+Since compression isn't the bottleneck, `COMPRESSION_BALANCED` is generally recommended.
 
 | Value | Description |
 |-------|-------------|
@@ -237,27 +237,27 @@ Just link PULP, call `Pulp_Write()`, and the compressed shards accumulate in you
 
 ### 2. Centralised logging with a network share
 
-All servers write to `\\nas\\logs\\`. A scheduled task on the central machine runs `PulpReader` against new files and pipes the output to your observability platform.
+All servers write to `\\nas\logs\`. A scheduled task on the central machine runs `PulpReader` against new files and pipes the output to your observability platform.
 
 ```powershell
 # Example PowerShell script, with json format and output filter extensions (not included in the sources, but easily implementable)
-Get-ChildItem \\\\nas\\logs\\ -Filter *.bin | ForEach-Object {
+Get-ChildItem \\nas\logs\ -Filter *.bin | ForEach-Object {
     PulpReader.exe --input $_.FullName --format json --filter "http_code>=400" |
-        Invoke-RestMethod -Uri "https://api.datadog.com/v1/input" -Method Post
+        Invoke-RestMethod -Uri "[https://api.datadog.com/v1/input](https://api.datadog.com/v1/input)" -Method Post
 }
 ```
 
 ### 3. Direct export via stdout (currently the PulpReader only output integral text)
 
 ```cmd
-PulpReader.exe --input C:\\Logs\\shard_12345.bin --format json --filter "http_code>=500" |
-  curl -X POST https://api.datadog.com/v1/input -H "Content-Type: application/json" -d @-
+PulpReader.exe --input C:\Logs\shard_12345.bin --format json --filter "http_code>=500" |
+    curl -X POST [https://api.datadog.com/v1/input](https://api.datadog.com/v1/input) -H "Content-Type: application/json" -d @-
 ```
 
 ### 4. SIEM / cold storage decoding
 
 ```bash
-PulpReader.exe E:\\Archives\\2025-01-01.bin E:\\Archives\\2025-01-01.txt
+PulpReader.exe E:\Archives\2025-01-01.bin E:\Archives\2025-01-01.txt
 ```
 
 ---
@@ -280,7 +280,7 @@ factor. You can measure savings on your own workloads using the included
 | **5 TB / day** | Enterprise / High Traffic | ~1.7 TB stored/shipped | **~$250,000+** |
 
 *\*Savings reflect bandwidth, local/cold storage, and self-hosted cluster capacity (Elastic, Loki).*  
-*\*A lifetime commercial license typically pays for itself within weeks or days on high-volume nodes.*
+*A lifetime commercial license typically pays for itself within weeks or days on high-volume nodes.*
 
 ---
 
@@ -296,8 +296,8 @@ Pulp_Write()  →  TLS context  →  URL/IP cache  →  active buffer
                     |                            CompressionTask (thread pool)
                     |                                ↓
                     +——— WritePool_Enqueue() → WriteThread → WriteFile()
-                                                         ↓
-                                                   RotationThread (file creation, handle swap)
+                                                             ↓
+                                                       RotationThread (file creation, handle swap)
 ```
 
 Every thread owns its own cache and active buffer – no lock contention on the hot path. The write pool is a multi‑producer / multi‑consumer queue synchronised with slim reader‑writer locks and condition variables.
@@ -306,7 +306,8 @@ Every thread owns its own cache and active buffer – no lock contention on the 
 
 ## File Format
 
-Each log file is a sequence of independent blocks, making the storage resilient to corruption: Each decompressed payload contains:
+Each log file is a sequence of independent blocks, making the storage resilient to corruption.
+Each decompressed payload contains:
 
 - An array of `SerializedEntry` structs (32 bytes each)
 - A dictionary mapping cache indices back to their original string values (URLs and IPs)
@@ -342,18 +343,15 @@ Every block is independently decompressible. A partially written file can be rea
 ## Limitations
 
 - **Windows x64 only.** The code uses AVX2/AVX‑512 intrinsics and Windows‑specific APIs (TLS, SRW locks, thread pools). A Linux port is planned.
-
 - **No transactional durability for in‑flight data.** Logs in the active buffer are lost on a hard crash. Loss is bounded to `BATCH_SIZE / 32` entries per thread + the write queue if any (it's usually empty due to the speed of the write pool). Batches already flushed to disk are safe.
-
 - **Flush triggered by throughput only** – no background timer. Low‑traffic applications should use the smallest batch size (15 600 logs) probably with a unique long lived thread.
-
 - **Fixed log schema.** The `Pulp_Write()` signature is optimised for HTTP structured logs. Arbitrary structured fields might require extending the source, although the current field semantic is fairly agnostic.
 
 ---
 
 ## Contributions & project philosophy
 
-Contributors must adhere to the Contributor Licence Agreement (CLA.md) located at the root of the project. 
+Contributors must adhere to the Contributor Licence Agreement ([CLA.md](CLA.md)) located at the root of the project. 
 Take time to read it before contributing.
 The document also states the project's philosophy regarding the dual-license.
 
@@ -361,7 +359,7 @@ The document also states the project's philosophy regarding the dual-license.
 
 ## Author
 
-PULP was created by **François Gauthier** – Founder & Software Architect, [Superwired‑labs](https://www.linkedin.com/in/superwired-labs/).
+PULP was created by **François Gauthier** – Founder & Software Architect, [Superwired-labs](https://www.linkedin.com/in/superwired-labs/).
 
 ---
 
@@ -370,7 +368,6 @@ PULP was created by **François Gauthier** – Founder & Software Architect, [Su
 PULP is dual‑licensed:
 
 - **Open Source** – GNU Affero General Public License v3.0 (AGPLv3)
-
 - **Commercial** – a proprietary license for closed‑source products
 
 Full license texts are in the `LICENSES/` folder.  

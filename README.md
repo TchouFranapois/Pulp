@@ -4,7 +4,7 @@ copyright François Gauthier - Superwired‑Labs
 [![License](https://img.shields.io/badge/License-AGPL%20v3%20%2F%20Commercial-blue.svg)](LICENSES/AGPL-3.0.txt)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-lightgrey)]()
 
-**PULP is a lightweight (50 KB) C library (DLL) that compresses, anonymises, and writes logs directly to disk at line-rate.**
+**PULP is a lightweight (50 KB) Windows native C library (DLL) that compresses, anonymises, and writes logs directly to disk at line-rate.**
 
 You link it into your own workflow or appliances as an upstream layer and call its functions from your code. A companion command‑line utility (`PulpReader`) is provided to decode the binary archives[...]
 

@@ -175,8 +175,8 @@ static inline unsigned Ms_ctz(uint32_t v)          // count‑trailing‑zeros
 static inline unsigned Ms_clz(uint32_t v)          // count‑leading‑zeros
 {
 	unsigned long idx;
-	_BitScanReverse(&idx, v);       // idx = position of the highest bit (0‑based)
-	return 31u - (unsigned)idx;     // 31‑idx = number of leading zeros
+	_BitScanReverse(&idx, v);                      // idx = position of the highest bit (0‑based)
+	return 31u - (unsigned)idx;                    // 31‑idx = number of leading zeros
 }
 
 

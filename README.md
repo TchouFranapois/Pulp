@@ -167,7 +167,7 @@ The `LogProducer` project lets you verify PULP's performance on your own hardwar
 4. Open `LogProducer.vcxproj` in a new Visual Studio instance.
 5. Build the `LogProducer` project to create the `x64` folder (or create it manually)
 6. Copy `Pulp.dll` and `Pulp.lib` from the `PULP/x64/Release/` folder into the `LogProducer/x64/Release/` folder.
-7. Run `LogProducer.exe`.
+7. Customize the test at will (paths to dataset, output directory, number of running threads, PULP options...) in the `LogProducer` code (it's easy) and Run `LogProducer.exe` in console
 
 The test datasets are embedded. Results print to console (throughput, compression ratio, memory footprint, lost logs).
 

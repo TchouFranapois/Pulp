@@ -322,39 +322,39 @@ Every block is independently decompressible. A partially written file can be rea
 
 ```json
 {
-[STAT] cache_hit resource L1 : 249937807
-[STAT] cache_hit resource L1 % : 99.98
-[STAT] cache_hit resource L2 : 62193
-[STAT] cache_hit resource L2 % : 0.02
-[STAT] cache_hit resource L3 : 0
-[STAT] cache_hit resource L3 % : 0.00
-[STAT] cache_hit endpoint L1 : 250000000
-[STAT] cache_hit endpoint L1 % : 100.00
-[STAT] cache_hit endpoint L2 : 0
-[STAT] cache_hit endpoint L2 % : 0.00
-[STAT] cache_hit endpoint L3 : 0
-[STAT] cache_hit endpoint L3 % : 0.00
-[STAT] resource_cache_probes_total : 206998729
-[STAT] endpoint_cache_probes_total : 4944735
-[STAT] resource cache_insert_to_step_ratio : 1.21
-[STAT] endpoint cache_insert_to_step_ratio : 50.56
-[STAT] resource cache_probes_depth_max : 32
-[STAT] endpoint cache_probes_depth_max : 0
-[STAT] resource_cache_fullprobescan_total : 0
-[STAT] endpoint_cache_fullprobescan_total : 0
-[STAT] log_processed_total : 250000000
-[STAT] batch_flushed_total : 15
-[STAT] batch_compressed_total : 15
-[STAT] batch_written_total : 15
-[STAT] writer_waitfile_max : 0
-[STAT] backpressure_count : 0
-[STAT] compression_ratio_avg : 0.71
-[STAT] compression_failure_total : 0
-[STAT] lost_logs_total : 0
-[STAT] log_rotation : 1
-[STAT] log_refused_total : 0
-[STAT] rotation_resync_total : 0
-[STAT] throughput: 1.49 million logs/s
+ cache_hit resource L1 : 249937807
+ cache_hit resource L1 % : 99.98
+ cache_hit resource L2 : 62193
+ cache_hit resource L2 % : 0.02
+ cache_hit resource L3 : 0
+ cache_hit resource L3 % : 0.00
+ cache_hit endpoint L1 : 250000000
+ cache_hit endpoint L1 % : 100.00
+ cache_hit endpoint L2 : 0
+ cache_hit endpoint L2 % : 0.00
+ cache_hit endpoint L3 : 0
+ cache_hit endpoint L3 % : 0.00
+ resource_cache_probes_total : 206998729
+ endpoint_cache_probes_total : 4944735
+ resource cache_insert_to_step_ratio : 1.21
+ endpoint cache_insert_to_step_ratio : 50.56
+ resource cache_probes_depth_max : 32
+ endpoint cache_probes_depth_max : 0
+ resource_cache_fullprobescan_total : 0
+ endpoint_cache_fullprobescan_total : 0
+ log_processed_total : 250000000
+ batch_flushed_total : 15
+ batch_compressed_total : 15
+ batch_written_total : 15
+ writer_waitfile_max : 0
+ backpressure_count : 0
+ compression_ratio_avg : 0.71
+ compression_failure_total : 0
+ lost_logs_total : 0
+ log_rotation : 1
+ log_refused_total : 0
+ rotation_resync_total : 0
+ throughput: 1.49 million logs/s
 }
 ```
 

@@ -27,7 +27,7 @@ Want to verify the numbers? Drop the PULP DLL and Lib files into the LogProducer
 |----------------|-------------------|
 | You build a high‑traffic web server, proxy, or firewall on Windows and need to log millions of requests per second. | PULP compresses on the fly and writes directly to disk, keeping CPU and memory usage predictable. |
 | You want to reduce the cost of log storage and network egress. | Lossless semantic pre‑compression plus LZ4 typically shrinks structured data by a factor of 3–5×. |
-| You are legally required to anonymise IP addresses before storing logs. | AVX‑512 accelerated masking works on both IPv4 and IPv6, with configurable levels. |
+| You are legally required to anonymise IP addresses before storing logs. | On the-fly AVX‑512 accelerated masking works on both IPv4 and IPv6, with configurable levels. |
 | You need an audit‑proof, corruption‑resiliant binary archive for compliance. | PULP batches are self‑contained and can be decoded years later with the supplied command‑line tool. |
 | You already have a log collector (Fluent Bit, Vector, etc.) and just want a faster writer. | PULP outputs compressed `.bin` files that any collector can ship; you decide when and how to move them. |
 | You don't want to manage a separate logging service or daemon. | PULP is a single DLL, linked statically or dynamically into your own process. No extra process, no network ports, no heavy configuration. |

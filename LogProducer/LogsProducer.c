@@ -248,7 +248,7 @@ int main(void) {
         "C:\\AltLogspath",         // Hot Swap backup (if main path fails)
         "C:\\logs\\error",         // Error file path
         1,                         // Inter-thread atomic numeration (1 == ON, 0 == OFF)
-        ANON_IP_NONE,              // IP Anon
+        ANON_IP_2,              // IP Anon
         0,                         // Truncate params on resource field (1 == ON, 0 == OFF)
 		128,                       // Batches per file before rotation (must be power of two, default 128)
         COMPRESSION_BALANCED,      // Compression level

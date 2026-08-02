@@ -125,6 +125,7 @@
       <CompileAs>CompileAsC</CompileAs>
       <AdditionalModuleDependencies>
       </AdditionalModuleDependencies>
+      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -134,7 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="LogsProducer.cpp" />
+    <ClCompile Include="LogsProducer.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="const.h" />

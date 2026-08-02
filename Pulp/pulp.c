@@ -180,107 +180,73 @@ static inline unsigned Ms_clz(uint32_t v)          // count‑leading‑zeros
 }
 
 
-static inline int ClassifyIpAvx512(const char* s, size_t n)
+/* ---------------------------------------------------------------------------
+ *  IP / Protocol Classifier (Ultra-Fast Scalar Single-Pass)
+ *
+ *  Returns:
+ *   0 = IPv4 (or IPv4 + port)
+ *   1 = IPv6 (or IPv6 + port / compressed)
+ *  -1 = Invalid / non-IP / Domain name
+ * --------------------------------------------------------------------------- */
+static inline int ClassifyIpFast(const char* s, size_t n)
 {
-	/* -----  Strip brackets --------------------------------------- */
 	s = StripBrackets(s, &n);
-	if (n == 0)                     // "[]" or empty string → IPv4/invalid
+	if (n == 0 || n > 80)
 		return -1;
 
-	/* -----  Constantes vectorielles ----------------------------- */
-	const __m256i v_colon = _mm256_set1_epi8(':');
-	const __m256i v_dot = _mm256_set1_epi8('.');
-	const __m256i v_perc = _mm256_set1_epi8('%');
+	int colon_cnt = 0;
+	int dot_cnt = 0;
+	int last_colon = -1;
+	int last_dot = -1;
+	int has_double_colon = 0;
+	int invalid_char = 0;
 
-	/* -----  Masques cumulés -------------------------------------- */
-	uint32_t mask_all_colon = 0;      // bits 0..31 = positions of ':'
-	uint32_t mask_all_dot = 0;      // bits 0..31 = positions of '.'
-	uint32_t mask_all_perc = 0;      // bits 0..31 = positions of '%'
-	uint32_t double_colon_bits = 0;  // bits where "::" appears
+	for (size_t i = 0; i < n; ++i) {
+		char c = s[i];
 
-	size_t processed = 0;            // number of bytes already scanned
-
-	while (processed < n)
-	{
-		size_t remaining = n - processed;
-		__m256i chunk;
-
-		if (remaining >= 32)
-		{
-			/* Full load (unaligned) */
-			chunk = _mm256_loadu_si256((const __m256i*)(s + processed));
+		if (c == ':') {
+			if (i > 0 && s[i - 1] == ':') {
+				has_double_colon = 1;
+			}
+			colon_cnt++;
+			last_colon = (int)i;
 		}
-		else
-		{
-			/* Partial load with mask – avoids out-of-bounds reads */
-			__mmask32 k = (1U << remaining) - 1U;   // bits 0..remaining‑1 = 1
-			chunk = _mm256_maskz_loadu_epi8(k, s + processed);
+		else if (c == '.') {
+			dot_cnt++;
+			last_dot = (int)i;
 		}
-
-		/* Comparisons */
-		__m256i eq_colon = _mm256_cmpeq_epi8(chunk, v_colon);
-		__m256i eq_dot = _mm256_cmpeq_epi8(chunk, v_dot);
-		__m256i eq_perc = _mm256_cmpeq_epi8(chunk, v_perc);
-
-		uint32_t m_colon = (uint32_t)_mm256_movemask_epi8(eq_colon);
-		uint32_t m_dot = (uint32_t)_mm256_movemask_epi8(eq_dot);
-		uint32_t m_perc = (uint32_t)_mm256_movemask_epi8(eq_perc);
-
-		/* Global shift (actual position in the string) */
-		uint32_t shift = (uint32_t)processed;
-		mask_all_colon |= (m_colon << shift);
-		mask_all_dot |= (m_dot << shift);
-		mask_all_perc |= (m_perc << shift);
-
-		/* Detection of "::" (two consecutive ':') */
-		double_colon_bits |= (m_colon & (m_colon << 1));
-
-		processed += (remaining >= 32) ? 32 : remaining;
+		/* Détection rapide de caractères incompatibles avec une IP pure/port */
+		else if ((c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') &&
+			c != '/' && c != '%' && c != '[' && c != ']') {
+			invalid_char = 1; // Contient des lettres non-hex (ex: http, domain)
+		}
 	}
 
-	/* -----  Zone-id handling (%…) -------------------------- */
-	if (mask_all_perc)
-	{
-		unsigned perc_pos = Ms_ctz(mask_all_perc);          // first '%'
-		uint32_t keep_mask = (perc_pos == 0) ? 0U : ((1U << perc_pos) - 1U);
-		mask_all_colon &= keep_mask;
-		mask_all_dot &= keep_mask;
-		/* double_colon_bits is no longer relevant after the % */
+	/* Si la chaîne contient des caractères non autorisés dans une IP -> Non-IP */
+	if (invalid_char)
+		return -1;
+
+	/* Pas de deux-points -> IPv4 valide (ex: 192.168.1.1) ou invalide */
+	if (colon_cnt == 0) {
+		return (dot_cnt == 3) ? 0 : -1;
 	}
 
-	/* -----  Quick decisions ----------------------------------- */
-	if (mask_all_colon == 0)               // no ':' → IPv4 or invalid
-		return 0;
-
-	if (mask_all_dot == 0)                 // no '.' → pure IPv6 or IPv6+port
-		return 1;                          // even if the last ':' was a port
-	if (double_colon_bits)                 // presence of "::" → confirmed IPv6
-		return 1;
-
-	/* -----  Useful positions ------------------------------------ */
-	unsigned first_colon = Ms_ctz(mask_all_colon);
-	unsigned last_colon = 31u - Ms_clz(mask_all_colon);
-	unsigned first_dot = Ms_ctz(mask_all_dot);
-	unsigned last_dot = 31u - Ms_clz(mask_all_dot);
-
-	/* -----  IPv4 + port (only ':' after the last '.') -------- */
-	if (last_colon > last_dot)
-	{
-		/* Is there a ':' before the last ':' ? */
-		uint32_t before_last = mask_all_colon & ((1U << last_colon) - 1U);
-		if (before_last == 0)                 // no ':' before
-			return 0;                         // IPv4 + port
-		/* A ':' before the last ':' belongs to the IPv6 address */
+	/* Présence de double deux-points ou aucun point -> IPv6 pur ou compressé */
+	if (dot_cnt == 0 || has_double_colon) {
 		return 1;
 	}
 
-	/* -----  Last ':' before the last '.' → IPv4‑embedded ---- */
+	/* Cas mixte IPv4 + Port (ex: 192.168.1.1:8080) vs IPv6-embedded */
+	if (last_colon > last_dot) {
+		return (colon_cnt == 1 && dot_cnt == 3) ? 0 : 1;
+	}
+
 	return 1;
 }
 
 
-/* =========================================================================
- *  IP Anonymization (AVX-512VL)
+/* ---------------------------------------------------------------------------
+ *  IP Anonymization (AVX2)
  *
  *  Masks IPv4/IPv6 addresses with 'x'. Supports RFC 4291, CIDR, zones,
  *  and port suffixes. Processing is zero-allocation.
@@ -289,170 +255,131 @@ static inline int ClassifyIpAvx512(const char* s, size_t n)
  *           DO NOT free() or store for cross-thread use.
  *
  *  @note:   Input max length is 79 chars (MAX_IPV6_LEN).
- *  @hw:     Requires AVX-512VL. Calling on unsupported CPU triggers SIGILL.
- * ========================================================================= */
-
-
-/* ---------------------------------------------------------------------------
- *  Anonymization of IPv4 and IPv6 addresses (Hell)
+ *  @hw:     Requires AVX2. No fallback needed on modern x86-64 CPUs.
  * --------------------------------------------------------------------------- */
+
 static inline char* AnonIp(const char* ip, int ip_anon_lvl, uint8_t isIpv6, ThreadContext* ctx)
 {
-
 	/* ---------- Normalization of the anonymization level ---------------- */
-	int max_units = isIpv6 ? 8 : 4;               /* 8 hextets or 4 octets */
+	int max_units = isIpv6 ? 8 : 4;
 	int units_to_mask = ip_anon_lvl;
-	if (isIpv6) units_to_mask *= 2;              /* each level = 2 hextets */
+	if (isIpv6) units_to_mask *= 2;
 	if (units_to_mask < 0) units_to_mask = 0;
 	if (units_to_mask > max_units) units_to_mask = max_units;
 
 	/* ---------- Initial scan of the string ------------------------------- */
-	size_t src_len = 0;                         /* total length */
-	size_t addr_end = 0;                         /* end of the address part */
-	size_t sep_off[17];                           /* offsets of unit beginnings */
-	int    sep_cnt = 0;                         /* number of detected units */
-	int    double_colon_idx = -1;                 /* index of "::" in sep_off */
-	int    seen_double_colon = 0;                 /* flag for validation */
+	size_t src_len = 0;
+	size_t addr_end = 0;
+	size_t sep_off[17];
+	int    sep_cnt = 0;
+	int    double_colon_idx = -1;
+	int    seen_double_colon = 0;
 
-	/* First unit always starts at the first character */
 	sep_off[sep_cnt++] = 0;
 
 	while (ip[src_len] != '\0') {
 		char c = ip[src_len];
 
-		/* ----- End of the address part (start of the suffix) ----- */
-		if (c == '[' || c == ']' || c == '/' || c == '%' ||
-			(!isIpv6 && c == ':'))          /* IPv4 port */
-		{
+		if (c == '[' || c == ']' || c == '/' || c == '%' || (!isIpv6 && c == ':')) {
 			addr_end = src_len;
 			break;
 		}
 
-		/* ----- IPv6 handling ----- */
 		if (isIpv6) {
-			/* Detection of the double colon "::" */
 			if (c == ':' && src_len > 0 && ip[src_len - 1] == ':') {
-				if (seen_double_colon) {          /* more than one :: → invalid */
-					return NULL;
-				}
+				if (seen_double_colon) return NULL;
 				seen_double_colon = 1;
-				double_colon_idx = sep_cnt - 1;   /* the previous offset represents the start of :: */
-				/* The next separator (after ::) starts a new unit */
+				double_colon_idx = sep_cnt - 1;
+				if (sep_cnt >= 17) return NULL;
 				sep_off[sep_cnt++] = src_len + 1;
 			}
-			/* Normal separator ':' (but not the second ':' of ::) */
 			else if (c == ':' && !(src_len > 0 && ip[src_len - 1] == ':')) {
+				if (sep_cnt >= 17) return NULL;
 				sep_off[sep_cnt++] = src_len + 1;
 			}
 		}
-		/* ----- IPv4 handling ----- */
 		else if (c == '.') {
+			if (sep_cnt >= 17) return NULL;
 			sep_off[sep_cnt++] = src_len + 1;
 		}
 
 		++src_len;
 	}
 
-	if (addr_end == 0) addr_end = src_len;   /* no extension detected */
+	if (addr_end == 0) addr_end = src_len;
 
-	/* ---------- Validation of the compressed IPv6 format -------------------- */
+	/* ---------- Validation IPv6 ----------------------------------------- */
 	if (isIpv6 && seen_double_colon) {
-		/* Only one :: allowed – we have already checked that there are not two */
-		/* Calculate the number of explicit hextets already encountered */
-		int explicit_hextets = sep_cnt;               /* each offset = one hextet */
-		int missing_hextets = 8 - explicit_hextets;   /* implicit hextets created by :: */
-
-		if (missing_hextets < 0)                      /* more than 8 hextets → invalid */
-			return NULL;
+		int explicit_hextets = sep_cnt;
+		int missing_hextets = 8 - explicit_hextets;
+		if (missing_hextets < 0) return NULL;
 
 		if (missing_hextets > 0) {
-			/* Shift the offsets after the :: to make room */
 			for (int i = sep_cnt - 1; i > double_colon_idx; --i) {
+				if (i + missing_hextets >= 17) return NULL;
 				sep_off[i + missing_hextets] = sep_off[i];
 			}
-			/* Insert virtual offsets corresponding to the missing hextets */
 			for (int i = 0; i < missing_hextets; ++i) {
+				if (double_colon_idx + i + 1 >= 17) return NULL;
 				sep_off[double_colon_idx + i + 1] = sep_off[double_colon_idx] + i + 1;
 			}
 			sep_cnt += missing_hextets;
 		}
 	}
 
-	/* ---------- Calculation of the masking start point ------------------ */
+	/* ---------- Masking offsets ----------------------------------------- */
 	if (units_to_mask > sep_cnt) units_to_mask = sep_cnt;
-	size_t mask_start = (units_to_mask == 0) ?
-		addr_end :                     /* nothing to mask */
-		sep_off[sep_cnt - units_to_mask];
+	size_t mask_start = (units_to_mask == 0) ? addr_end : sep_off[sep_cnt - units_to_mask];
+	if (mask_start > addr_end) mask_start = addr_end;
 
-	if (mask_start > addr_end) mask_start = addr_end;   /* safety */
+	/* ---------- Bounds & Safety Checks ---------------------------------- */
+	size_t suffix_len = strlen(ip + addr_end);
+	if (addr_end > 80 || (addr_end + suffix_len) >= sizeof(ctx->ipdest)) {
+		return NULL;
+	}
 
-	/* ---------- Maximum size check (80 bytes) --------- */
-	if (addr_end > 80) return NULL;   /* exceeds the constraint */
-
-	/* ---------- Construction of the 0/1 mask ---------------------------- */
-	uint8_t mask[80] = { 0 };            /* mask array (max 80 bytes) */
-	int in_suffix = 0;                 /* true as soon as a suffix is reached */
+	/* ---------- Construct mask array ------------------------------------ */
+	uint8_t mask[80] = { 0 };
+	int in_suffix = 0;
 
 	for (size_t i = 0; i < addr_end; ++i) {
 		char c = ip[i];
-
-		/* Enter suffix as soon as an end-of-address character is encountered */
-		if (!in_suffix && (c == '[' || c == ']' || c == '/' || c == '%' ||
-			(!isIpv6 && c == ':')))
-		{
+		if (!in_suffix && (c == '[' || c == ']' || c == '/' || c == '%' || (!isIpv6 && c == ':'))) {
 			in_suffix = 1;
 		}
-
-		/* Separators and any suffix are never masked */
-		if (in_suffix || c == '.' || c == ':' || c == '[' || c == ']') {
-			mask[i] = 0;
-		}
-		else {
-			mask[i] = (i >= mask_start) ? 1 : 0;
-		}
+		mask[i] = (in_suffix || c == '.' || c == ':' || c == '[' || c == ']') ? 0 : ((i >= mask_start) ? 1 : 0);
 	}
 
-	/* ---------- Allocation of the result (address + suffix) ------------ */
-	size_t suffix_len = strlen(ip + addr_end);
 	char* dst = ctx->ipdest;
-	if (!dst) return NULL;
-	ZeroMemory(dst, sizeof(ctx->ipdest));
 
-	/* ---------- Application of the mask with AVX512 ----------------------- */
-	const size_t vec_sz = 64;  // 512 bits = 64 octets
+	/* ---------- Apply Mask (AVX2) --------------------------------------- */
+	const size_t vec_sz = 32;
 	size_t pos = 0;
-	const __m512i xx_vec = _mm512_set1_epi8('x');
-	const __m512i zero = _mm512_setzero_si512();
 
-	for (; pos + vec_sz <= addr_end; pos += vec_sz) {
-		__m512i src_vec = _mm512_loadu_si512((const __m512i*)(ip + pos));
-		__m512i mask_vec = _mm512_loadu_si512((const __m512i*)(mask + pos));
+	if (addr_end >= vec_sz) {
+		const __m256i xx_vec = _mm256_set1_epi8('x');
+		const __m256i zero = _mm256_setzero_si256();
 
-		// Bit mask : 1 where the mask byte is > 0
-		__mmask64 k = _mm512_cmpgt_epu8_mask(mask_vec, zero);
+		for (; pos + vec_sz <= addr_end; pos += vec_sz) {
+			__m256i src_vec = _mm256_loadu_si256((const __m256i*)(ip + pos));
+			__m256i mask_vec = _mm256_loadu_si256((const __m256i*)(mask + pos));
+			__m256i blend_mask = _mm256_cmpgt_epi8(mask_vec, zero);
+			__m256i res = _mm256_blendv_epi8(src_vec, xx_vec, blend_mask);
+			_mm256_storeu_si256((__m256i*)(dst + pos), res);
+		}
 
-		// Blend : if bit = 1 → 'x', else source byte
-		__m512i res = _mm512_mask_blend_epi8(k, src_vec, xx_vec);
-
-		_mm512_storeu_si512((__m512i*)(dst + pos), res);
+#if defined(_M_X64) || defined(_WIN64)
+		_mm256_zeroupper();
+#endif
 	}
 
-	// Scalar processing for the remaining bytes
+	/* Scalar fallback for remaining bytes (or short IPv4 strings) */
 	for (; pos < addr_end; ++pos) {
 		dst[pos] = mask[pos] ? 'x' : ip[pos];
 	}
 
-	/* ---------- Copy the suffix (port, zone, CIDR, brackets, …) ----- */
-	if (suffix_len > 0) {
-		memcpy(dst + addr_end, ip + addr_end, suffix_len + 1);   /* +1 = NUL */
-	}
-	else {
-		dst[addr_end] = '\0';
-	}
-
-#if defined(_M_X64) || defined(_WIN64)
-	_mm256_zeroupper(); // Clean up AVX-512 state for the calling application
-#endif
+	/* ---------- Copy Suffix & Null terminate ---------------------------- */
+	memcpy(dst + addr_end, ip + addr_end, suffix_len + 1);
 
 	return dst;
 }
@@ -1061,35 +988,6 @@ FREE:
 	return NULL;
 }
 
-static BOOL HasAVX512FullSupport(void) {
-	int cpuInfo[4] = { 0 };
-
-	// 1. Verify the maximum CPUID leaf (>= 7)
-	__cpuid(cpuInfo, 0);
-	if (cpuInfo[0] < 7) return FALSE;
-
-	// 2. Verify the OSXSAVE bit (bit 27 of ECX on leaf 1)
-	__cpuid(cpuInfo, 1);
-	if ((cpuInfo[2] & (1 << 27)) == 0) return FALSE;
-
-	// 3. Verify that the OS supports saving ZMM registers via XCR0
-	// Bits 1 (XMM), 2 (YMM), 5 (opmask), 6 (ZMM_hi256), 7 (hi16_ZMM) -> 0xE6
-	unsigned long long xcr0 = _xgetbv(0);
-	if ((xcr0 & 0xE6) != 0xE6) return FALSE;
-
-	// 4. Inspect the leaf 7, sub-leaf 0 (EBX)
-	__cpuidex(cpuInfo, 7, 0);
-	int ebx = cpuInfo[1];
-
-	const int avx512f_mask = (1 << 16); // Bit 16: Foundation
-	const int avx512bw_mask = (1 << 30); // Bit 30: Byte & Word
-	const int avx512vl_mask = (1 << 31); // Bit 31: Vector Length
-
-	int required_bits = avx512f_mask | avx512bw_mask | avx512vl_mask;
-
-	return (ebx & required_bits) == required_bits;
-}
-
 
 
 // One‐time callback that performs all the global setup exactly once
@@ -1137,19 +1035,6 @@ BOOL CALLBACK InitializeOnce(PINIT_ONCE initOnce, PVOID parameter, LPVOID* rtnct
 		LOG_ERROR("%s", msg);
 		WriteError(herror, msg);
 		return FALSE;
-	}
-
-	// 5. Validate IP_ANON configuration and CPU support (AVX-512 F + BW + VL)
-	ip_anon_lvl = pInit->ip_anon_lvl;
-	if (ip_anon_lvl > 0) {
-		if (!HasAVX512FullSupport()) {
-			char msg[256];
-			snprintf(msg, sizeof(msg), "LIOERROR => IP_ANON level %d requested, but CPU lacks full AVX-512 (F+BW+VL) support (line %d)\n",
-				ip_anon_lvl, __LINE__);
-			LOG_ERROR("%s", msg);
-			WriteError(herror, msg);
-			return FALSE;
-		}
 	}
 
 	InitGlobalConfig();
@@ -1433,7 +1318,7 @@ uint16_t PulpWrite(
 	uint64_t seq = enable_sequence ? (uint64_t)InterlockedIncrement64(&global_sequence) : 0;
 
 	if (ip_anon_lvl != ANON_IP_NONE) {
-		int8_t isipv6 = ClassifyIpAvx512(ip, ip_len);
+		int8_t isipv6 = ClassifyIpFast(ip, ip_len);
 		if (isipv6 >= 0) {
 			AnonIp(ip, ip_anon_lvl, isipv6, ctx);
 		}

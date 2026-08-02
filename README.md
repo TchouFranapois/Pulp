@@ -4,10 +4,12 @@ Copyright François Gauthier - Superwired-Labs
 [![License](https://img.shields.io/badge/License-AGPL%20v3%20%2F%20Commercial-blue.svg)](LICENSES/AGPL-3.0.txt)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-lightgrey)]()
 
-**PULP is a lightweight (< 50 KB) C library (DLL) that compresses, anonymises, and writes logs directly to disk at line-rate.**
+**Stop feeding raw logs to expensive storage.**
 
-You link it into your own application and call its functions from your code. 
-A companion command‑line utility (`PulpReader`) is provided to decode the binary archives back to text or JSON.
+PULP is a native C library for Windows x64 that compresses HTTP, DNS, and telemetry logs **at the source** inside your own process, before they ever hit disk or network. 
+Semantic deduplication + LZ4 shrinks data 3–5×; IP anonymisation (AVX-512) is applied inline; and the zero-allocation hot path sustains +21M logs/sec with a deterministic, low memory footprint.
+
+Link the DLL, call one function per log, and let compressed shards accumulate. A companion CLI (`PulpReader`) decodes them back to text or JSON whenever you need.
 
 **Key numbers (6‑core Ryzen 5 Pro 8640HS, NVMe SSD):**
 - **+21 million logs/second** sustained throughput

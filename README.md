@@ -26,8 +26,8 @@ Want to verify the numbers? Drop the PULP DLL and Lib files into the LogProducer
 | Your situation | What PULP brings |
 |----------------|-------------------|
 | You build a high‑traffic web server, proxy, or firewall on Windows and need to log millions of requests per second. | PULP compresses on the fly and writes directly to disk, keeping CPU and memory usage predictable. |
-| You want to reduce the cost of log storage and network egress. | Lossless semantic pre‑compression plus LZ4 typically shrinks HTTP logs by a factor of 5. |
-| You are legally required to anonymise IP addresses before storing logs. | AVX‑512 accelerated masking works on both IPv4 and IPv6, with configurable levels. |
+| You want to reduce the cost of log storage and network egress. | Lossless semantic pre‑compression plus LZ4 typically shrinks structured data by a factor of 3–5×. |
+| You are legally required to anonymise IP addresses before storing logs. | On-the-fly AVX‑512 accelerated masking works on both IPv4 and IPv6, with configurable levels. |
 | You need an audit‑proof, corruption‑resiliant binary archive for compliance. | PULP batches are self‑contained and can be decoded years later with the supplied command‑line tool. |
 | You already have a log collector (Fluent Bit, Vector, etc.) and just want a faster writer. | PULP outputs compressed `.bin` files that any collector can ship; you decide when and how to move them. |
 | You don't want to manage a separate logging service or daemon. | PULP is a single DLL, linked statically or dynamically into your own process. No extra process, no network ports, no heavy configuration. |
@@ -330,15 +330,32 @@ For a deep dive into the design choices and performance measurements that drive 
 
 ---
 
-## File Format
+## File Format & Resilience
 
-Each log file is a sequence of independent blocks, making the storage resilient to corruption.
-Each decompressed payload contains:
+PULP uses a **block-based binary format** engineered for high-throughput streaming writes and total thread-level isolation. A `.bin` archive is a continuous sequence of independent, self-contained compressed blocks (batches).
 
-- An array of `SerializedEntry` structs (32 bytes each)
-- A dictionary mapping cache indices back to their original string values (URLs and IPs)
+```
++-----------------------------------------------------------------------+
+|                              LOG FILE                                 |
+| +-------------------+ +-------------------+     +-------------------+ |
+| |  Block 0 (Batch)  | |  Block 1 (Batch)  | ... |  Block N (Batch)  | |
+| +-------------------+ +-------------------+     +-------------------+ |
++-----------------------------------------------------------------------+
+```
 
-Every block is independently decompressible. A partially written file can be read up to the last complete block.
+### 1. On-Disk Block Structure
+
+Each block on disk consists of a lightweight header followed immediately by the payload:
+
+| Field | Type / Size | Description |
+| :--- | :--- | :--- |
+| **`compSize`** | `uint32_t` (4 bytes) | Byte length of the compressed payload on disk |
+| **`decompSize`** | `uint32_t` (4 bytes) | Expected byte length of the decompressed payload |
+| **Payload** | `compSize` bytes | Raw LZ4 compressed block (or uncompressed if `compSize == decompSize`) |
+
+### 2. Decompressed Payload Layout
+
+Once decompressed, the payload contains two primary sections delimited by 64-bit canary markers (`DICT_BEGIN` and `DICT_END`):
 
 ---
 

@@ -330,15 +330,32 @@ For a deep dive into the design choices and performance measurements that drive 
 
 ---
 
-## File Format
+## File Format & Resilience
 
-Each log file is a sequence of independent blocks, making the storage resilient to corruption.
-Each decompressed payload contains:
+PULP uses a **block-based binary format** engineered for high-throughput streaming writes and total thread-level isolation. A `.bin` archive is a continuous sequence of independent, self-contained compressed blocks (batches).
 
-- An array of `SerializedEntry` structs (32 bytes each)
-- A dictionary mapping cache indices back to their original string values (URLs and IPs)
+```
++-----------------------------------------------------------------------+
+|                              LOG FILE                                 |
+| +-------------------+ +-------------------+     +-------------------+ |
+| |  Block 0 (Batch)  | |  Block 1 (Batch)  | ... |  Block N (Batch)  | |
+| +-------------------+ +-------------------+     +-------------------+ |
++-----------------------------------------------------------------------+
+```
 
-Every block is independently decompressible. A partially written file can be read up to the last complete block.
+### 1. On-Disk Block Structure
+
+Each block on disk consists of a lightweight header followed immediately by the payload:
+
+| Field | Type / Size | Description |
+| :--- | :--- | :--- |
+| **`compSize`** | `uint32_t` (4 bytes) | Byte length of the compressed payload on disk |
+| **`decompSize`** | `uint32_t` (4 bytes) | Expected byte length of the decompressed payload |
+| **Payload** | `compSize` bytes | Raw LZ4 compressed block (or uncompressed if `compSize == decompSize`) |
+
+### 2. Decompressed Payload Layout
+
+Once decompressed, the payload contains two primary sections delimited by 64-bit canary markers (`DICT_BEGIN` and `DICT_END`):
 
 ---
 

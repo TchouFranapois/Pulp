@@ -1,0 +1,33 @@
+# Dual License Notice — PULP
+
+PULP is distributed under a **dual-licensing model** managed by **Superwired-Labs**.
+
+Depending on your use case, you may choose between the following two licenses:
+
+---
+
+## 1. Open Source License (AGPLv3)
+
+If you are developing an open-source project or can comply with the copyleft 
+requirements of the GNU Affero General Public License v3.0, you may use PULP 
+under the terms of the AGPLv3.
+
+* Full license text: [`LICENSES/AGPL-3.0.txt`](LICENSES/AGPL-3.0.txt)
+
+---
+
+## 2. Commercial License (Proprietary)
+
+If you intend to integrate PULP into a closed-source product, proprietary 
+service, or enterprise application without disclosing your source code, 
+a commercial license is required.
+
+* Commercial terms & conditions: [`LICENSES/LicenseRef-Superwired-Commercial.txt`](LICENSES/LicenseRef-Superwired-Commercial.txt)
+* Purchasing & Pricing details: Contact **fgauthier [at] superwired-labs [dot] com**.
+
+---
+
+## Third-Party Open Source Software
+
+PULP incorporates third-party open-source components (CityHash, xxHash, LZ4). 
+For credits and license terms, see [`THIRD_PARTY.md`](THIRD_PARTY.md).

@@ -302,6 +302,9 @@ Pulp_Write()  →  TLS context  →  URL/IP cache  →  active buffer
 
 Every thread owns its own cache and active buffer – no lock contention on the hot path. The write pool is a multi‑producer / multi‑consumer queue synchronised with slim reader‑writer locks and condition variables.
 
+For a deep dive into the design choices and performance measurements that drive PULP's architecture, see this companion technical article:
+[Processing 250M logs in 11.5s on a laptop with on-the-fly 5× compression](https://medium.com/@fgauthier_36718/loggr-processing-250m-logs-in-11-5s-on-a-laptop-with-on-the-fly-5-compression-7903b3f941d4)
+
 ---
 
 ## File Format

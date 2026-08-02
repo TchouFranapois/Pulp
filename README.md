@@ -9,7 +9,10 @@ Copyright François Gauthier - Superwired-Labs
 PULP is a native C library for Windows x64 that compresses HTTP, DNS, and telemetry logs **at the source** inside your own process, before they ever hit disk or network. 
 Lossless semantic deduplication + LZ4 shrinks data 3–5×; IP anonymisation (AVX-512) is applied inline; and the zero-allocation hot path sustains +21M logs/sec with a deterministic, low memory footprint.
 
-Link the DLL, call one function per log, and let compressed shards accumulate. A companion CLI (`PulpReader`) decodes them back to text or JSON whenever you need.
+Link the DLL, call one function per log, and let compressed shards accumulate. 
+A companion CLI (`PulpReader`) decodes them back to text or JSON whenever you need. 
+
+Want to verify the numbers? Drop the PULP DLL and Lib files into the LogProducer folder, run it on your own hardware (test datasets included), ready in under 5 minutes.
 
 **Key numbers (6‑core Ryzen 5 Pro 8640HS, NVMe SSD):**
 - **+21 million logs/second** sustained throughput

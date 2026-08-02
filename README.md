@@ -348,13 +348,13 @@ Every block is independently decompressible. A partially written file can be rea
  batch_written_total : 15
  writer_waitfile_max : 0
  backpressure_count : 0
- compression_ratio_avg : 0.71
+ compression_lz4_ratio_avg : 0.71
  compression_failure_total : 0
  lost_logs_total : 0
  log_rotation : 1
  log_refused_total : 0
  rotation_resync_total : 0
- throughput: 1.49 million logs/s
+ throughput: 26.49 millions logs/s
 }
 ```
 

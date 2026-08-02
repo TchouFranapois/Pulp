@@ -30,3 +30,19 @@ distributed under their own respective licenses.
 
 \- Full license text: LICENSES/BSD-2-xxHash.txt
 
+
+
+
+
+\## lz4
+
+
+
+\- Copyright (c) 2011 Yann Collet.
+
+\- License: BSD 2‑Clause
+
+\- Full license text: LICENSES/BSD-2-lz4.txt
+
+
+

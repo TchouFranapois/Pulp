@@ -157,6 +157,23 @@ int main() {
 
 ---
 
+## How to Test
+
+The `LogProducer` project lets you verify PULP's performance on your own hardware in minutes.
+
+1. Clone the repository.
+2. Open `PULP.sln` in Visual Studio 2022.
+3. Build the `PULP` solution (Release | x64).
+4. Open `LogProducer.vcxproj` in a new Visual Studio instance.
+5. Build the `LogProducer` project to create the `x64` folder (or create it manually)
+6. Copy `Pulp.dll` and `Pulp.lib` from the `PULP/x64/Release/` folder into the `LogProducer/x64/Release/` folder.
+7. Run `LogProducer.exe`.
+
+The test datasets are embedded. Results print to console (throughput, compression ratio, memory footprint, lost logs).
+
+
+---
+
 ## API Overview
 
 The public API is declared in **`pulp.h`** and exported by `pulp.dll`.

@@ -4,7 +4,7 @@ Copyright François Gauthier - Superwired-Labs
 [![License](https://img.shields.io/badge/License-AGPL%20v3%20%2F%20Commercial-blue.svg)](LICENSES/AGPL-3.0.txt)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-lightgrey)]()
 
-**Stop feeding raw logs to expensive storage.**
+**Stop feeding raw logs to expensive storage/network.**
 
 PULP is a native C library for Windows x64 that compresses HTTP, DNS, and telemetry logs **at the source** inside your own process, before they ever hit disk or network. 
 Semantic deduplication + LZ4 shrinks data 3–5×; IP anonymisation (AVX-512) is applied inline; and the zero-allocation hot path sustains +21M logs/sec with a deterministic, low memory footprint.

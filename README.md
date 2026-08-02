@@ -7,7 +7,7 @@ Copyright François Gauthier - Superwired-Labs
 **Stop feeding raw logs to expensive storage/network.**
 
 PULP is a native C library for Windows x64 that compresses HTTP, DNS, and telemetry logs **at the source** inside your own process, before they ever hit disk or network. 
-Lossless semantic deduplication + LZ4 shrinks data 3–5×; IP anonymisation (AVX-512) is applied inline; and the zero-allocation hot path sustains +21M logs/sec with a deterministic, low memory footprint.
+Lossless semantic deduplication + LZ4 shrinks data 3–5×; IP anonymisation is applied inline; and the zero-allocation hot path sustains +21M logs/sec with a deterministic, low memory footprint.
 
 Link the DLL, call one function per log, and let compressed shards accumulate. 
 A companion CLI (`PulpReader`) decodes them back to text whenever you need. 
@@ -27,7 +27,7 @@ Want to verify the numbers? Drop the PULP DLL and Lib files into the LogProducer
 |----------------|-------------------|
 | You build a high‑traffic web server, proxy, or firewall on Windows and need to log millions of requests per second. | PULP compresses on the fly and writes directly to disk, keeping CPU and memory usage predictable. |
 | You want to reduce the cost of log storage and network egress. | Lossless semantic pre‑compression plus LZ4 typically shrinks structured data by a factor of 3–5×. |
-| You are legally required to anonymise IP addresses before storing logs. | On-the-fly AVX‑512 accelerated masking works on both IPv4 and IPv6, with configurable levels. |
+| You are legally required to anonymise IP addresses before storing logs. | On-the-fly AVX‑2 accelerated masking works on both IPv4 and IPv6, with configurable levels. |
 | You need an audit‑proof, corruption‑resiliant binary archive for compliance. | PULP batches are self‑contained and can be decoded years later with the supplied command‑line tool. |
 | You already have a log collector (Fluent Bit, Vector, etc.) and just want a faster writer. | PULP outputs compressed `.bin` files that any collector can ship; you decide when and how to move them. |
 | You don't want to manage a separate logging service or daemon. | PULP is a single DLL, linked statically or dynamically into your own process. No extra process, no network ports, no heavy configuration. |
@@ -55,7 +55,7 @@ By committing fully to the Win32 ecosystem, PULP delivers line-rate ingestion wi
 
 ## Features
 
-- **Blazing fast** – zero‑allocation hot path, per‑thread TLS caches, zero-eviction temporal cache, custom SIMD‑accelerated IP masking (AVX‑512).
+- **Blazing fast** – zero‑allocation hot path, per‑thread TLS caches, zero-eviction temporal cache, custom SIMD‑accelerated IP masking (AVX‑2).
 - **On‑the‑fly compression** – lossless semantic precompression paired with LZ4 reduces I/O volume before writing to disk.
 - **Deterministic memory footprint** – no memory spikes during activity surges; the architecture absorbs load seamlessly.
 - **Dual‑mode IP anonymisation** – configurable masking for IPv4 and IPv6, including support for CIDR, zones, and compressed addresses.
@@ -98,7 +98,6 @@ Performance depends on the hardware, the number of threads, the data entropy, ca
 
 - Windows 10 / 11 or Windows Server 2016+ (x64).
 - CPU with **AVX2** support (all modern x86‑64 processors).  
-  **AVX‑512 (F, BW, VL) is only required if IP anonymisation is enabled.**
 - Visual Studio 2022 (solution provided).
 
 ---
@@ -407,7 +406,7 @@ Once decompressed, the payload contains two primary sections delimited by 64-bit
 
 ## Limitations
 
-- **Windows x64 only.** The code uses AVX2/AVX‑512 intrinsics and Windows‑specific APIs (TLS, SRW locks, thread pools). A Linux port is planned.
+- **Windows x64 only.** The code uses Windows‑specific APIs (TLS, SRW locks, thread pools). A Linux port is planned.
 - **No transactional durability for in‑flight data.** Logs in the active buffer are lost on a hard crash. Loss is bounded to `BATCH_SIZE / 32` entries per thread + the write queue if any (it's usually empty due to the speed of the write pool). Batches already flushed to disk are safe.
 - **Flush triggered by throughput only** – no background timer. Low‑traffic applications should use the smallest batch size (15 600 logs) probably with a unique long lived thread.
 - **Fixed log schema.** The PulpWrite() signature accepts a fixed set of fields (operation, resource, endpoint, status, timing, flags). 
